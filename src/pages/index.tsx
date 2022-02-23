@@ -2,7 +2,7 @@ import type { NextPage } from 'next'
 import styles from '../styles/Home.module.css'
 import { createApi } from 'unsplash-js';
 
-export async function getServerSideProps(context) {
+export async function getServerSideProps() {
   const unsplashAccessKey = process.env.UNSPLASH_ACCESS_KEY || ''
   const unsplash = createApi({
     accessKey: unsplashAccessKey,
