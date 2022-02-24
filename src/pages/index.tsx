@@ -1,47 +1,45 @@
 import type { NextPage } from 'next'
-import styles from '../styles/Home.module.css'
-import { createApi } from 'unsplash-js';
+import { getCurrentLocation } from '../helper/locationHelper';
+import { findRandomPhotoUrl } from '../helper/unsplashHelper';
+import { getWeatherCondition } from '../helper/weatherHelper';
 
-export async function getServerSideProps() {
-  const unsplashAccessKey = process.env.UNSPLASH_ACCESS_KEY || ''
-  const unsplash = createApi({
-    accessKey: unsplashAccessKey,
-    fetch: fetch,
-  });
-  
-  const collections = (await unsplash.search.getCollections({
-    query: 'weather app',
-  })).response?.results
-
-  const collectionIds = collections?.map(collection => collection.id)
-
-  const photos = (await unsplash.search.getPhotos({
-    collectionIds,
-    query: 'rainy'
-  })).response?.results
-
-  const photo = photos ? photos[0] : undefined
-
-  if(!photo) {
-    return {props: { photo: 'not found'}}
-  }
-
-  return {
-    props: { photo: photo.urls.full }, // will be passed to the page component as props
+type Props = {
+  backgroundUrl: string
+  currentLocation: {
+    country: string,
+    city: string
   }
 }
 
-const Home: NextPage<{photo: string}> = ({photo}) => {
+export async function getServerSideProps({req}: any): Promise<{props: Props}> {
+  const userIpAddress = req.headers['x-real-ip'] || req.connection.remoteAddress
+  
+  const currentLocation = await getCurrentLocation(userIpAddress)
+  const weatherCondition = await getWeatherCondition(userIpAddress) || 'moody'
+
+  const backgroundUrl = await findRandomPhotoUrl({
+    collectionName: 'weather app', photoName: weatherCondition
+  }) || ''
+
+  return {
+    props: { backgroundUrl, currentLocation },
+  }
+}
+
+const Home: NextPage<Props> = ({backgroundUrl, currentLocation}) => {
   return (
     <div
       style={{
-        background: `url("${photo}")`,
+        background: `url("${backgroundUrl}")`,
         backgroundPosition: "center",
         backgroundRepeat: "no-repeat",
         backgroundSize: "cover",
         height: "100%",
       }}
     >
+      <h1>
+        {currentLocation.country}, {currentLocation.city}
+      </h1>
     </div>
   )
 }
